@@ -36,7 +36,7 @@ public class UrlController {
         return new ResponseUrl(code);
     }
 
-    @GetMapping("/code")
+    @GetMapping("/{shortCode}")
     public ResponseEntity<Void> redirect(@PathVariable String shortCode)
     {
         String longUrl=urlService.getLongUrl(shortCode);

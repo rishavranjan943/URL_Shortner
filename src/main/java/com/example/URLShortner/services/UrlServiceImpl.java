@@ -45,6 +45,7 @@ public class UrlServiceImpl implements UrlService {
         url.setShortCode(code);
         url.setCreatedAt(LocalDateTime.now());
         url.setClickCount(0L);
+        url.setExpiresAt(LocalDateTime.now().plusDays(30));
 
         urlRepository.save(url);
         return code;
