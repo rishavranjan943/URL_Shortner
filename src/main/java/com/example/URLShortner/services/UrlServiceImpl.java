@@ -1,11 +1,10 @@
 package com.example.URLShortner.services;
 
-import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Optional;
-import java.util.Random;
 
 import org.springframework.stereotype.Service;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.example.URLShortner.dto.RequestUrl;
 import com.example.URLShortner.dto.UrlStatsResponse;
@@ -13,20 +12,26 @@ import com.example.URLShortner.repository.UrlRepository;
 import com.example.URLShortner.entity.Url;
 import com.example.URLShortner.exception.UrlInvalidException;
 import com.example.URLShortner.exception.UrlNotFoundException;
+import com.example.URLShortner.utils.Base62Encoder;
+import com.example.URLShortner.utils.UrlValidator;
 
 @Service
 public class UrlServiceImpl implements UrlService {
     private final UrlRepository urlRepository;
+    private final Base62Encoder base62Encoder;
+    private final UrlValidator  urlValidator;
 
-    public UrlServiceImpl(UrlRepository urlRepository)
+    public UrlServiceImpl(UrlRepository urlRepository,Base62Encoder base62Encoder,UrlValidator urlValidator)
     {
         this.urlRepository=urlRepository;
+        this.base62Encoder=base62Encoder;
+        this.urlValidator=urlValidator;
     }
 
     @Override
     public String shortenUrl(RequestUrl request)
     {
-        if(!isValid(request.getLongUrl()))
+        if(!urlValidator.isValid(request.getLongUrl()))
             throw new UrlInvalidException("Invalid URL");
 
         Optional<Url> existing=urlRepository.findByLongUrl(request.getLongUrl());
@@ -37,7 +42,7 @@ public class UrlServiceImpl implements UrlService {
 
         String code;
         do{
-            code=generateShortCode();
+            code=base62Encoder.generate();
         }while(urlRepository.existsByShortCode(code));
 
         Url url=new Url();
@@ -52,12 +57,11 @@ public class UrlServiceImpl implements UrlService {
     }
 
     @Override
+    @Cacheable(value = "urls", key = "#shortCode")    //value->cache bucket name(here urls),key specifies how to identify a cached entry within that cache.(If multiple argument tell how to combine them to form cache key)
     public String getLongUrl(String shortCode)
     {
-        Url url=urlRepository.findByShortCode(shortCode)
-                            .orElseThrow(()->new UrlNotFoundException("URL not found"));
-        url.setClickCount(url.getClickCount()+1);
-        urlRepository.save(url);
+        Url url = urlRepository.findByShortCode(shortCode)
+                .orElseThrow(() -> new UrlNotFoundException("URL not found"));
         return url.getLongUrl();
     }
 
@@ -75,29 +79,16 @@ public class UrlServiceImpl implements UrlService {
         );
     }
 
-    private String generateShortCode() {
-
-        String chars =
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-        Random random = new Random();
-
-        StringBuilder sb = new StringBuilder();
-
-        for(int i = 0; i < 6; i++) {
-            sb.append(chars.charAt(random.nextInt(chars.length())));
-        }
-
-        return sb.toString();
+    @Override
+    public void deleteUrl(String shortCode) {
+        urlRepository.deleteByShortCode(shortCode);
     }
 
-    private boolean isValid(String longUrl)
-    {   
-        try {
-            URI.create(longUrl).toURL();
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
+    @Override
+    public void incrementClickCount(String shortCode) {
+        urlRepository.findByShortCode(shortCode).ifPresent(url -> {
+        url.setClickCount(url.getClickCount() + 1);
+        urlRepository.save(url);
+        });
     }
 }

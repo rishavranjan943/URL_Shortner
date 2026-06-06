@@ -20,7 +20,6 @@ import jakarta.validation.Valid;
 
 
 @RestController
-@RequestMapping("/api")
 public class UrlController {
     private final UrlService urlService;
     
@@ -30,7 +29,7 @@ public class UrlController {
     }
 
     @PostMapping("/shorten")
-    private ResponseUrl shorten(@Valid @RequestBody RequestUrl request)
+    public ResponseUrl shorten(@Valid @RequestBody RequestUrl request)
     {
         String code=urlService.shortenUrl(request);
         return new ResponseUrl(code);
@@ -40,6 +39,7 @@ public class UrlController {
     public ResponseEntity<Void> redirect(@PathVariable String shortCode)
     {
         String longUrl=urlService.getLongUrl(shortCode);
+        urlService.incrementClickCount(shortCode);
         return ResponseEntity.status(HttpStatus.FOUND)
                             .location(URI.create(longUrl))
                             .build();
