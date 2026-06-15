@@ -86,9 +86,6 @@ public class UrlServiceImpl implements UrlService {
 
     @Override
     public void incrementClickCount(String shortCode) {
-        urlRepository.findByShortCode(shortCode).ifPresent(url -> {
-        url.setClickCount(url.getClickCount() + 1);
-        urlRepository.save(url);
-        });
+        urlRepository.incrementClickCount(shortCode); 
     }
 }

@@ -8,8 +8,7 @@ import org.springframework.cache.annotation.EnableCaching;
 @EnableCaching
 public class UrlShortnerApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(UrlShortnerApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(UrlShortnerApplication.class, args);
+    }
 }
