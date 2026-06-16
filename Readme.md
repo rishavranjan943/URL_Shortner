@@ -100,8 +100,6 @@ http://localhost:8080
 
 * Custom aliases
 * User authentication
-* Redis caching
-* Docker deployment
 * Analytics dashboard
 
 ```
