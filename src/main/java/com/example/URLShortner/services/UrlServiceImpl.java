@@ -5,6 +5,9 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.transaction.annotation.Transactional;
+
 
 import com.example.URLShortner.dto.RequestUrl;
 import com.example.URLShortner.dto.UrlStatsResponse;
@@ -62,6 +65,9 @@ public class UrlServiceImpl implements UrlService {
     {
         Url url = urlRepository.findByShortCode(shortCode)
                 .orElseThrow(() -> new UrlNotFoundException("URL not found"));
+        if (url.getExpiresAt() != null && url.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new UrlNotFoundException("URL has expired");
+        }
         return url.getLongUrl();
     }
 
@@ -87,5 +93,13 @@ public class UrlServiceImpl implements UrlService {
     @Override
     public void incrementClickCount(String shortCode) {
         urlRepository.incrementClickCount(shortCode); 
+    }
+
+
+    @Scheduled(cron = "0 0 * * * *")  // runs every hour
+    @Transactional
+    public void deleteExpiredUrls() {
+        System.out.println(">>> Running expiry cleanup job");
+        urlRepository.deleteExpiredUrls(LocalDateTime.now());
     }
 }

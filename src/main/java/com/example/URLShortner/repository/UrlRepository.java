@@ -1,5 +1,6 @@
 package com.example.URLShortner.repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -24,4 +25,9 @@ public interface UrlRepository extends JpaRepository<Url,Long> {
     @Transactional
     @Query("UPDATE Url u SET u.clickCount = u.clickCount + 1 WHERE u.shortCode = :shortCode")
     void incrementClickCount(@Param("shortCode") String shortCode);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Url u WHERE u.expiresAt < :now")
+    void deleteExpiredUrls(@Param("now") LocalDateTime now);
 }
